@@ -1,0 +1,142 @@
+#!/usr/bin/env python
+__author__ = 'mike knowles'
+
+if __name__ == '__main__':
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(description="ITSx -- Identifies ITS sequences and extracts the ITS region\n"
+                                        "by Johan Bengtsson-Palme et al., University of Gothenburg\n"
+                                        "Version: 1.0.11\n"
+                                        "-----------------------------------------------------------------\n")
+    parser.add_argument('-i',
+                        metavar='{file}',
+                        help='DNA FASTA input file to investigate'),
+    parser.add_argument('-o',
+                        metavar='{file}',
+                        help='Base for the names of output file(s)'),
+    group = parser.add_argument_group("ITSx commands", "Commands actually passed to ITSx")
+    group.add_argument('-p',
+                       metavar='{directory}',
+                       help='A path to a directory of HMM-profile collections representing ITS conserved regions, '
+                            'default is in the same directory as ITSx itself'),
+    group.add_argument('--date',
+                       metavar='{T or F}',
+                       help='Adds a date and time stamp to the output directory, off (F) by default'),
+    group.add_argument('--reset',
+                       metavar='{T or F}',
+                       help='Re-creates the HMM-database before ITSx is run, off (F) by default'),
+
+    # Sequence selection options:
+    group.add_argument('-t',
+                       metavar='{character code}',
+                       help='Profile set to use for the search, see the User\'s Guide (comma-separated), default is '
+                            'all'),
+    group.add_argument('-E',
+                       metavar='{value}',
+                       help='Domain E-value cutoff for a sequence to be included in the output, default = 1e-5'),
+    group.add_argument('-S',
+                       metavar='{value}',
+                       help='Domain score cutoff for a sequence to be included in the output, default = 0'),
+    group.add_argument('-N',
+                       metavar='{value}',
+                       help='The minimal number of domains that must match a sequence before it is included, '
+                            'default = 2'),
+    group.add_argument('--selection_priority',
+                       metavar='{sum, domains, eval, score}',
+                       help='Selects what will be of highest priority when determining the origin of the sequence, '
+                            'default is sum'),
+    group.add_argument('--search_eval',
+                       metavar='{value}',
+                       help='The E-value cutoff used in the HMMER search, high numbers may slow down the process, '
+                            'cannot be used with the --search_score option, default is 0.01'),
+    group.add_argument('--search_score',
+                       metavar='{value}',
+                       help='The score cutoff used in the HMMER search, low numbers may slow down the process, '
+                            'cannot be used with the --search_eval option, default is to used E-value cutoff, '
+                            'not score'),
+    group.add_argument('--allow_single_domain',
+                       metavar='{e-value,score or F}',
+                       help='Allow inclusion of sequences that only find a single domain, given that they meet the '
+                            'given E-value and score thresholds, on with parameters 1e-9,0 by default'),
+    group.add_argument('--allow_reorder',
+                       metavar='{T or F}',
+                       help='Allows profiles to be in the wrong order on extracted sequences, off (F) by default'),
+    group.add_argument('--complement',
+                       metavar='{T or F}',
+                       help='Checks both DNA strands against the database, creating reverse complements, '
+                            'on (T) by default'),
+    group.add_argument('--cpu',
+                       metavar='{value}',
+                       help='the number of CPU threads to use, default is 1'),
+    group.add_argument('--multi_thread',
+                       metavar='{T or F}',
+                       help='Multi-thread the HMMER-search, on (T) if number of CPUs (--cpu option > 1), else off (F) '
+                            'by default'),
+    group.add_argument('--heuristics',
+                       metavar='{T or F}',
+                       help='Selects whether to use HMMERs heuristic filtering, off (F) by default'),
+
+    # Output options:
+    group.add_argument('--summary',
+                       metavar='{T or F}',
+                       help='Summary of results output, on (T) by default'),
+    group.add_argument('--graphical',
+                       metavar='{T or F}',
+                       help='\'Graphical\' output, on (T) by default'),
+    group.add_argument('--fasta',
+                       metavar='{T or F}',
+                       help='FASTA-format output of extracted ITS sequences, on (T) by default'),
+    group.add_argument('--preserve',
+                       metavar='{T or F}',
+                       help='Preserve sequence headers in input file instead of printing out ITSx headers, '
+                            'off (F) by default'),
+    group.add_argument('--save_regions',
+                       metavar='{SSU,ITS1,5.8S,ITS2,LSU,all,none}',
+                       help='A comma separated list of regions to output separate FASTA files for, \'ITS1,'
+                            'ITS2\' by default'),
+    group.add_argument('--anchor',
+                       metavar='{integer or HMM}',
+                       help='Saves an additional number of bases before and after each extracted region. If set to '
+                            '\'HMM\' all bases matching the corresponding HMM will be output, default = 0'),
+    group.add_argument('--only_full',
+                       metavar='{T or F}',
+                       help='If true, output is limited to full-length regions, off (F) by default'),
+    group.add_argument('--partial',
+                       metavar='{integer}',
+                       help='Saves additional FASTA-files for full and partial ITS sequences longer than the '
+                            'specified cutoff, default = 0 (off)'),
+    group.add_argument('--concat',
+                       metavar='{T or F}',
+                       help='Saves a FASTA-file with concatenated ITS sequences (with 5.8S removed), off (F) by '
+                            'default'),
+    group.add_argument('--minlen',
+                       metavar='{integer}',
+                       help='Minimum length the ITS regions must be to be outputted in the concatenated file (see '
+                            'above), default = 0'),
+    group.add_argument('--positions',
+                       metavar='{T or F}',
+                       help='Table format output containing the positions ITS sequences were found in, '
+                            'on (T) by default'),
+    group.add_argument('--table',
+                       metavar='{T or F}',
+                       help='Table format output of sequences containing probable ITS sequences, off (F) by default'),
+    group.add_argument('--not_found',
+                       metavar='{T or F}',
+                       help='Saves a list of non-found entries, on (T) by default'),
+    group.add_argument('--detailed_results',
+                       metavar='{T or F}',
+                       help='Saves a tab-separated list of all results, off (F) by default'),
+    group.add_argument('--truncate',
+                       metavar='{T or F}',
+                       help='Truncates the FASTA output to only contain the actual ITS sequences found, '
+                            'on (T) by default'),
+    group.add_argument('--silent',
+                       metavar='{T or F}',
+                       help='Supresses printing progress info to stderr, off (F) by default'),
+    group.add_argument('--graph_scale',
+                       metavar='{value}',
+                       help='Sets the scale of the graph output, if value is zero, a percentage view is shown, '
+                            'default = 0'),
+    group.add_argument('--save_raw',
+                       metavar='{T or F}',
+                       help='Saves all raw data for searches etc. instead of removing it on finish, off (F) by default'),
