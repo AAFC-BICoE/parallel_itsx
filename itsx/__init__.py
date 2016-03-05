@@ -1,9 +1,63 @@
 #!/usr/bin/env python
 import os
 import errno
-from subprocess import Popen, STDOUT, PIPE
 __author__ = 'mike knowles'
-__all__ = ['make_path', 'execute']
+__all__ = ['make_path', 'itsxcmd', 'Bin', 'BinPacker', "parallel"]
+
+
+class Bin:
+    """Bin for holding sequences"""
+
+    def __init__(self, capacity, contents=None):
+        self.capacity = capacity
+        self.contents = contents if contents else list()
+        self.sum = sum(map(len, list()))
+
+    def add(self, x):
+        self.contents.append(x)
+        self.sum += len(x)
+
+    def __iter__(self):
+        for i in self.contents:
+            yield i
+
+    def free_capacity(self):
+        return self.capacity - self.sum
+
+    def __delattr__(self, item):
+        del self
+
+
+class BinPacker:
+    """ Uses first fit algorithm to solve the bin-packing problem
+    """
+    def __init__(self, record, cap):
+        # Extra is ideal for small contigs
+        self.bins = [Bin(cap)]
+        for seq_record in record:
+            # Add the item to the first bin that can hold it
+            # If no bin can hold it, make a new bin
+            item = len(seq_record)
+            for xBin in self.bins:
+                if item > cap:
+                    if xBin.sum == 0:
+                        xBin.add(seq_record)
+                        xBin.capacity = item
+                        break
+                    # Sometimes, large contigs are bigger than cap
+                if xBin.free_capacity() >= item:
+                    xBin.add(seq_record)
+                    break
+                if self.bins.index(xBin) == len(self.bins) - 1:
+                    self.bins.append(Bin(cap))
+
+    def __iter__(self):
+        for xBin in self.bins:
+            yield xBin
+
+    def __delattr__(self, item):
+        for xBin in self.bins:
+            del xBin
 
 def make_path(inpath):
     """
@@ -19,65 +73,6 @@ def make_path(inpath):
         # If the os error is anything but directory exists, then raise
         if exception.errno != errno.EEXIST:
             raise
-
-
-def execute(command, outfile="", **kwargs):
-    """
-    Allows for dots to be printed to the terminal while waiting for a long system call to run
-    :param command: the command to be executed
-    :param outfile: optional string of an output file
-    from https://stackoverflow.com/questions/4417546/constantly-print-subprocess-output-while-process-is-running
-    """
-    import sys
-    import time
-    # Initialise count
-    count = 0
-    # Initialise the starting time
-    start = int(time.time())
-    maxtime = 0
-    # Removing Shell=True to prevent excess memory use thus shlex split if needed
-    if type(command) is not list and "shell" not in kwargs:
-        import shlex
-        command = shlex.split(command)
-    # Run the commands - direct stdout to PIPE and stderr to stdout
-    # DO NOT USE subprocess.PIPE if not writing it!
-    if outfile:
-        process = Popen(command, stdout=PIPE, stderr=STDOUT, **kwargs)
-    else:
-        DEVNULL = open(os.devnull, 'wb')
-        process = Popen(command, stdout=DEVNULL, stderr=STDOUT, **kwargs)
-    # Write the initial time
-    sys.stdout.write('[{:}] '.format(time.strftime('%H:%M:%S')))
-    # Create the output file - if not provided, then nothing should happen
-    writeout = open(outfile, "ab+") if outfile else ""
-    # Poll process for new output until finished
-    while True:
-        # If an output file name is provided
-        if outfile:
-            # Get stdout into a variable
-            nextline = process.stdout.readline()
-            # Print stdout to the file
-            writeout.write(nextline)
-        # Break from the loop if the command is finished
-        if process.poll() is not None:
-            break
-        # Adding sleep commands slowed down this method when there was lots of output. Difference between the start time
-        # of the analysis and the current time. Action on each second passed
-        currenttime = int(time.time())
-        if currenttime - start > maxtime:
-            # Set the max time for each iteration
-            maxtime = currenttime - start
-            # Print up to 80 dots on a line, with a one second delay between each dot
-            if count <= 80:
-                sys.stdout.write('.')
-                count += 1
-            # Once there are 80 dots on a line, start a new line with the the time
-            else:
-                sys.stdout.write('\n[{:}] .'.format(time.strftime('%H:%M:%S')))
-                count = 1
-    # Close the output file
-    writeout.close() if outfile else ""
-    sys.stdout.write('\n')
 
 if __name__ == '__main__':
     pass

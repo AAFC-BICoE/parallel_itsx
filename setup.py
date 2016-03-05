@@ -7,7 +7,7 @@ setup(
     name='parallel-itsx',
     version='0.0.dev1',
     packages=['itsx'],
-    url='https://github.com/MikeKnowles/parallel-itsx',
+    url='https://github.com/MikeKnowles/parallel_itsx',
     include_package_data=True,
     license='MIT',
     author='mike knowles',
