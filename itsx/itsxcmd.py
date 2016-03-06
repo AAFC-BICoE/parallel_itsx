@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from Bio.Application import AbstractCommandline, _Switch, _Option
-
+__doc__ = '''Provides ITSx wrapper for 1.0.11'''
 __author__ = 'mike knowles'
 
 
