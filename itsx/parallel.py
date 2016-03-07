@@ -19,6 +19,31 @@ class ITSx(object):
         self.fasta = i
         self.itsxqueue = Queue()
         self.name = ""
+        self.kwargs = kwargs
+        self.cmd = 'ITSx'
+
+    def __str__(self):
+        return str(ITSxCommandLine(i=self.fasta, o=self.path, cpu=self.threads, **self.kwargs))
+
+    def __repr__(self):
+        """Return a representation of the command line object for debugging.
+
+        e.g.
+        >>> from itsx.parallel import ITSx
+        >>> itsx = ITSx(i='/data', o='/data/out', cpu=5)
+        >>> itsx(name='name')
+        >>> print(itsx)
+        ITSx -i /data -o /data/out --cpu 5
+        >>> itsx
+        ITSx(cmd='ITSx', i='/data', o='/data/out', cpu=5)
+        """
+        answer = "%s(cmd=%s" % (self.__class__.__name__, repr(self.cmd))
+        for parameter in self.kwargs:
+            if parameter:
+                answer += ", %s=%s" \
+                      % (parameter, repr(self.kwargs[parameter]))
+        answer += ")"
+        return answer
 
     def parallel(self):
         while True:

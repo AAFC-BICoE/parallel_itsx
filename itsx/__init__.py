@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os
 import errno
+
 __author__ = 'mike knowles'
 __all__ = ['make_path', 'itsxcmd', 'Bin', 'BinPacker', "parallel"]
 
@@ -31,6 +32,7 @@ class Bin:
 class BinPacker:
     """ Uses first fit algorithm to solve the bin-packing problem
     """
+
     def __init__(self, record, cap):
         # Extra is ideal for small contigs
         self.bins = [Bin(cap)]
@@ -44,7 +46,7 @@ class BinPacker:
                         xBin.add(seq_record)
                         xBin.capacity = item
                         break
-                    # Sometimes, large contigs are bigger than cap
+                        # Sometimes, large contigs are bigger than cap
                 if xBin.free_capacity() >= item:
                     xBin.add(seq_record)
                     break
@@ -58,6 +60,7 @@ class BinPacker:
     def __delattr__(self, item):
         for xBin in self.bins:
             del xBin
+
 
 def make_path(inpath):
     """
@@ -73,6 +76,16 @@ def make_path(inpath):
         # If the os error is anything but directory exists, then raise
         if exception.errno != errno.EEXIST:
             raise
+
+
+def printtime(string, start):
+    """Prints a string in bold with the elapsed time
+    :param string: a string to be printed in bold
+    :param start: integer of the starting time
+    """
+    import time
+    print('\n\033[1m' + "[Elapsed Time: {:.2f} seconds] {}".format(time.time() - start, string) + '\033[0m')
+
 
 if __name__ == '__main__':
     pass
