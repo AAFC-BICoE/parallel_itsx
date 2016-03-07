@@ -26,7 +26,7 @@ class ITSx(object):
             ITSxCommandLine(i=filename, o=self.name, cpu=self.threads, **self.itsxargs)(cwd=cwd)
             self.itsxqueue.task_done()
 
-    def __call__(self, name=None):
+    def __call__(self, name=None, total=0):
         import math
         self.name = name if name else os.path.splitext(os.path.basename(self.fasta))[0]
         baselist = []
@@ -40,7 +40,7 @@ class ITSx(object):
         with open(self.fasta) as fastafile:
             # Open the fasta file, and sum the length
             # Is there a better way to get length of a fasta?
-            total = sum(map(len, SeqIO.parse(fastafile, "fasta")))
+            total = total if total else sum(map(len, SeqIO.parse(fastafile, "fasta")))
             fastafile.seek(0)
             # Reset the pointer to zero to re-read
             cap = int(math.ceil(float(total) / self.threads))

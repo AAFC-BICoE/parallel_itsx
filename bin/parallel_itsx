@@ -149,4 +149,4 @@ if __name__ == '__main__':
     kwargs = vars(parser.parse_args())
 
     from time import time
-    ITSx(**kwargs)(name='syn')
+    ITSx(**kwargs)()
